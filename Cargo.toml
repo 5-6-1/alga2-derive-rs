@@ -12,7 +12,7 @@ readme = "README.md"
 keywords = ["algebra", "derive", "macro", "codegen"]
 categories = ["mathematics", "no-std", "development-tools::procedural-macro-helpers"]
 rust-version = "1.93.0"
-exclude = ["target/", "tests/"]
+exclude = ["target/", "tests/", "Cargo.lock"]
 
 [lib]
 proc-macro = true
