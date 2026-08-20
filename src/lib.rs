@@ -37,8 +37,8 @@
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TS;
-use quote::{quote, ToTokens};
-use syn::{parse_macro_input, Data, DeriveInput, Fields, Ident, Index, Type};
+use quote::{ToTokens, quote};
+use syn::{Data, DeriveInput, Fields, Ident, Index, Type, parse_macro_input};
 
 /// Generates the tower impls for a struct.
 #[proc_macro_derive(Alga, attributes(alga))]
@@ -105,7 +105,7 @@ fn expand(input: &DeriveInput) -> syn::Result<TS> {
     let fields = match &input.data {
         Data::Struct(s) => fields_of(&s.fields)?,
         Data::Enum(_) | Data::Union(_) => {
-            return Err(syn::Error::new_spanned(input, "#[derive(Alga)] supports structs only"))
+            return Err(syn::Error::new_spanned(input, "#[derive(Alga)] supports structs only"));
         }
     };
 
@@ -131,7 +131,11 @@ fn fields_of(fields: &Fields) -> syn::Result<Vec<FieldInfo>> {
         Fields::Named(n) => {
             for f in &n.named {
                 let id = f.ident.clone().unwrap();
-                out.push(FieldInfo { ty: f.ty.clone(), suffix: id.to_token_stream(), name: Some(id) });
+                out.push(FieldInfo {
+                    ty: f.ty.clone(),
+                    suffix: id.to_token_stream(),
+                    name: Some(id),
+                });
             }
         }
         Fields::Unnamed(u) => {
@@ -141,7 +145,7 @@ fn fields_of(fields: &Fields) -> syn::Result<Vec<FieldInfo>> {
             }
         }
         Fields::Unit => {
-            return Err(syn::Error::new_spanned(fields, "#[derive(Alga)] needs at least one field"))
+            return Err(syn::Error::new_spanned(fields, "#[derive(Alga)] needs at least one field"));
         }
     }
     if out.is_empty() {
@@ -223,11 +227,7 @@ impl Gen<'_> {
         for e in extra {
             preds.push(syn::parse_quote!(#e));
         }
-        if preds.is_empty() {
-            quote!()
-        } else {
-            quote!(where #(#preds),*)
-        }
+        if preds.is_empty() { quote!() } else { quote!(where #(#preds),*) }
     }
 
     /// Per-field `T: Trait<Op>` bound list.
@@ -251,20 +251,29 @@ impl Gen<'_> {
         let grp = trait_path("Group");
         let abel = trait_path("AbelianGroup");
 
-        let combine_exprs = fields.iter().map(|f| {
-            let a = self_access(f);
-            let b = rhs_access(f);
-            let ty = &f.ty;
-            quote!(<#ty as #mag<#op_ts>>::combine(&#a, &#b))
-        }).collect::<Vec<_>>();
-        let identity_exprs = fields.iter().map(|f| {
-            let ty = &f.ty;
-            quote!(<#ty as #mon<#op_ts>>::identity())
-        }).collect::<Vec<_>>();
-        let inverse_exprs = fields.iter().map(|f| {
-            let a = self_access(f);
-            quote!(#a.inverse())
-        }).collect::<Vec<_>>();
+        let combine_exprs = fields
+            .iter()
+            .map(|f| {
+                let a = self_access(f);
+                let b = rhs_access(f);
+                let ty = &f.ty;
+                quote!(<#ty as #mag<#op_ts>>::combine(&#a, &#b))
+            })
+            .collect::<Vec<_>>();
+        let identity_exprs = fields
+            .iter()
+            .map(|f| {
+                let ty = &f.ty;
+                quote!(<#ty as #mon<#op_ts>>::identity())
+            })
+            .collect::<Vec<_>>();
+        let inverse_exprs = fields
+            .iter()
+            .map(|f| {
+                let a = self_access(f);
+                quote!(#a.inverse())
+            })
+            .collect::<Vec<_>>();
 
         let magma_b = self.bounds(fields, "Magma", op);
         let monoid_b = self.bounds(fields, "Monoid", op);
@@ -279,25 +288,29 @@ impl Gen<'_> {
 
         // The quasigroup ladder (Quasigroup → Loop) is additive-only in the
         // crate too; the multiplicative side stops at Monoid.
-        let quasigroup_ladder = (op == "Additive").then(|| quote! {
-            impl #impl_g #quasi<#op_ts> for #n #ty_g
-            #w_magma
-            {}
-            impl #impl_g #loop_t<#op_ts> for #n #ty_g
-            #w_monoid
-            {}
+        let quasigroup_ladder = (op == "Additive").then(|| {
+            quote! {
+                impl #impl_g #quasi<#op_ts> for #n #ty_g
+                #w_magma
+                {}
+                impl #impl_g #loop_t<#op_ts> for #n #ty_g
+                #w_monoid
+                {}
+            }
         });
 
         // Group/AbelianGroup only when the ladder runs that far.
-        let group_ladder = (max_level == "Group").then(|| quote! {
-            impl #impl_g #grp<#op_ts> for #n #ty_g
-            #w_group
-            {
-                fn inverse(&self) -> Self { #c_inverse }
+        let group_ladder = (max_level == "Group").then(|| {
+            quote! {
+                impl #impl_g #grp<#op_ts> for #n #ty_g
+                #w_group
+                {
+                    fn inverse(&self) -> Self { #c_inverse }
+                }
+                impl #impl_g #abel<#op_ts> for #n #ty_g
+                #w_group
+                {}
             }
-            impl #impl_g #abel<#op_ts> for #n #ty_g
-            #w_group
-            {}
         });
 
         quote! {
@@ -335,19 +348,18 @@ impl Gen<'_> {
 
         // CommutativeRing needs the fields to be commutative rings; at `Ring`
         // level we use the semiring bound (a commutative ring implies it).
-        let comm_b = if level == Level::Field {
-            &field_b
-        } else {
-            &semiring_b
-        };
+        let comm_b = if level == Level::Field { &field_b } else { &semiring_b };
         let w_semiring = self.where_clause(&semiring_b);
         let w_comm = self.where_clause(comm_b);
         let w_field = self.where_clause(&field_b);
 
-        let inv_exprs = fields.iter().map(|f| {
-            let a = self_access(f);
-            quote!(#a.inv())
-        }).collect::<Vec<_>>();
+        let inv_exprs = fields
+            .iter()
+            .map(|f| {
+                let a = self_access(f);
+                quote!(#a.inv())
+            })
+            .collect::<Vec<_>>();
         let c_inv = construct(fields, &inv_exprs);
 
         // DivisionRing/Field only at `Field` level.
