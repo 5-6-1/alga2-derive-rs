@@ -23,7 +23,7 @@ quote = "1"
 syn = { version = "2", features = ["full"] }
 
 [dev-dependencies]
-# The derive's doctests expand against the real tower. Local path for the
-# dev loop; the version requirement resolves on crates.io after alga2 0.1.0
-# publishes (this crate publishes first, so the path is stripped).
-alga2 = { version = "0.1", path = "D:/CS/Rust/alga2" }
+# The derive's doctests expand against the real tower. Path-only: cargo
+# strips path dev-deps at publish time (they never reach crates.io), so
+# this crate publishes independently of alga2's release schedule.
+alga2 = { path = "D:/CS/Rust/alga2" }
