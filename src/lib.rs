@@ -145,7 +145,10 @@ fn fields_of(fields: &Fields) -> syn::Result<Vec<FieldInfo>> {
             }
         }
         Fields::Unit => {
-            return Err(syn::Error::new_spanned(fields, "#[derive(Alga)] needs at least one field"));
+            return Err(syn::Error::new_spanned(
+                fields,
+                "#[derive(Alga)] needs at least one field",
+            ));
         }
     }
     if out.is_empty() {
