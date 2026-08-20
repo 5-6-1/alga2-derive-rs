@@ -8,11 +8,11 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/5-6-1/alga2-derive-rs"
 homepage = "https://github.com/5-6-1/alga2-derive-rs"
 documentation = "https://docs.rs/alga2-derive"
-readme = "../README.md"
+readme = "README.md"
 keywords = ["algebra", "derive", "macro", "codegen"]
 categories = ["mathematics", "no-std", "development-tools::procedural-macro-helpers"]
 rust-version = "1.93.0"
-exclude = ["target/"]
+exclude = ["target/", "tests/"]
 
 [lib]
 proc-macro = true
@@ -23,5 +23,7 @@ quote = "1"
 syn = { version = "2", features = ["full"] }
 
 [dev-dependencies]
-# The derive's doctests expand against the real tower.
-alga2 = { path = ".." }
+# The derive's doctests expand against the real tower. Local path for the
+# dev loop; the version requirement resolves on crates.io after alga2 0.1.0
+# publishes (this crate publishes first, so the path is stripped).
+alga2 = { version = "0.1", path = "D:/CS/Rust/alga2" }
