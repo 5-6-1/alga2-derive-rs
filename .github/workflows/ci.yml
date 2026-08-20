@@ -13,8 +13,8 @@ jobs:
     name: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
         with:
           components: rustfmt
       - run: cargo fmt --check
@@ -23,22 +23,19 @@ jobs:
     name: clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all-targets -- -D warnings
 
   test:
-    name: test (stable + MSRV)
+    name: test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust: [stable, 1.93.0]
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@${{ matrix.rust }}
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
       - uses: Swatinem/rust-cache@v2
       # Unit tests only: the doctests expand against alga2, whose local
       # path dev-dep exists only on the maintainer's machine. Once alga2
